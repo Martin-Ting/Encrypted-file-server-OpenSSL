@@ -19,7 +19,7 @@
 void header(int numperiods, int wait, bool active);
 void printLoading(int numperiods, int wait, bool active);
 
-void clientConnect_request(char * serveraddress, char * port, char* transType, char * infile);
+void connectToServer(char * serveraddress, char * port, char* transType, char * infile);
 BIO* establishSSLConnection(char * serveraddress, char * port);
 void performRSAChallenge(char * serveraddress, char * port, BIO* bio);
 int verifyTransaction(char* serveraddress, char* port, char* transType, BIO* bio);
@@ -63,10 +63,42 @@ int main( int argc, const char* argv[] )
  	srand(time(0));
  	
  	// connect to server
-	clientConnect_request(serverhost,port,transType, file); 
+	connectToServer(serverhost,port,transType, file); 
 	
 	printf("Client application is exiting.\nGood Bye!\n");
 	return 0;
+}
+
+void connectToServer(char * serveraddress, char * port, char* transType, char * infile){
+    // SSL init 
+	SSL_library_init(); 
+	// ============== SSL init //
+	
+	// establish connection
+	BIO* bio = establishSSLConnection(serveraddress, port);
+	// ================ STEP 1 FINISHED ESTABLISHED AN SSL CONNECTION
+ 	// Verify client
+ 	performRSAChallenge(serveraddress, port, bio);
+ 	// ================ 
+ 	int transaction = verifyTransaction(serveraddress, port, transType, bio);
+ 	if(transaction == 1) //send
+ 	{
+ 		sendFile(serveraddress, port, infile, bio);
+ 	}
+ 	if(transaction == 2) //recieve
+ 	{
+ 		recieveFile(serveraddress, port, infile, bio);
+ 	}
+ 	if(transaction < 0) //error
+ 	{
+ 		printf("Something went wrong with determining transaction type.");
+ 	}
+ 	if(transaction < 0) //error
+ 	{
+ 		printf("Something went wrong with determining transaction type.");
+ 	}
+	printf("SSL Connection closed.\n");
+	BIO_free(bio);
 }
 
 BIO* establishSSLConnection(char * serveraddress, char * port){
@@ -281,65 +313,6 @@ int verifyTransaction(char* serveraddress, char* port, char* transType, BIO* bio
 	
 	return getTransactionType(transType);
 }
-
-void clientConnect_request(char * serveraddress, char * port, char* transType, char * infile){
-    // SSL init 
-	SSL_library_init(); 
-	// ============== SSL init //
-	
-	// establish connection
-	BIO* bio = establishSSLConnection(serveraddress, port);
-	// ================ STEP 1 FINISHED ESTABLISHED AN SSL CONNECTION
- 	// Verify client
- 	performRSAChallenge(serveraddress, port, bio);
- 	// ================ 
- 	int transaction = verifyTransaction(serveraddress, port, transType, bio);
- 	if(transaction == 1) //send
- 	{
- 		sendFile(serveraddress, port, infile, bio);
- 	}
- 	if(transaction == 2) //recieve
- 	{
- 		recieveFile(serveraddress, port, infile, bio);
- 	}
- 	if(transaction < 0) //error
- 	{
- 		printf("Something went wrong with determining transaction type.");
- 	}
- 	if(transaction < 0) //error
- 	{
- 		printf("Something went wrong with determining transaction type.");
- 	}
-	printf("SSL Connection closed.\n");
-	BIO_free(bio);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // Useless header stuff... ==============

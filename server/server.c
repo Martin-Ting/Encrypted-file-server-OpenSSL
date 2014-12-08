@@ -16,7 +16,9 @@
 #include <signal.h>
 #include <fcntl.h>
 
-void accept_client_request(char * port);
+#define loop_forever for(;;)
+
+void acceptConnections(char * port);
 BIO* preparePort(char* port);
 void performRSAChallenge(BIO* clientbio);
 int verifyTransaction(BIO* clientbio);
@@ -49,10 +51,52 @@ int main( int argc, const char* argv[] )
 	char* port = (char*) argv[1];
 	port = strrchr(port, '=') + sizeof(char);
 	
-	accept_client_request(port); 
+	acceptConnections(port); 
 	
 	printf("Server application is exiting.\nGoodBye!\n" ); 
     return 0;
+}
+
+void acceptConnections(char * port){
+    //============================
+    // SSL init 
+	SSL_library_init(); 
+	SSL_load_error_strings();
+	ERR_load_BIO_strings();
+	OpenSSL_add_all_algorithms(); 
+	// ============== SSL init //
+	
+	BIO* clientbio = preparePort(port);
+	loop_forever
+	{
+		printf( "Waiting for client request.\n" ); //===============================================
+		while (BIO_do_accept(clientbio) <=0 )
+		{
+			printf( "error accepting \n" ); 
+			exit(1); 
+		}
+		printf("Connection with client accepted. Connection Established\n");//=======================
+		
+		/*      Verifying Client      */
+		performRSAChallenge(clientbio);
+		
+		int transaction = verifyTransaction(clientbio);
+		if(transaction == 1) //send so recieveFile
+ 		{
+ 			recieveFile(clientbio);
+ 		}
+ 		if(transaction == 2) //recieve so sendFile
+ 		{
+ 			sendFile(clientbio);
+ 		}
+ 		if(transaction < 0) //error
+ 		{
+ 			printf("Something went wrong with determining transaction type.");
+ 		}
+ 		
+		BIO_free(clientbio); 
+		break; // comment out to do more!
+	}
 }
 
 void performRSAChallenge(BIO* clientbio){
@@ -197,55 +241,11 @@ BIO* preparePort(char* port){
 	char* inport = malloc( sizeof(port));
 	strcpy(inport,port); 
 	BIO* clientbio = BIO_new_accept(inport);
-	if (BIO_do_accept(clientbio) <=0 ) 
+	if (BIO_do_accept(clientbio) <= 0 ) 
 	{
 		printf("error\n" ); 
 		exit(1); 
 	}
 	printf("Ready for connections.\n");
 	return clientbio;
-}
-//server class
-//your_server_app_name -port portumber
-void accept_client_request(char * port){
-    //============================
-    // SSL init 
-	SSL_library_init(); 
-	SSL_load_error_strings();
-	ERR_load_BIO_strings();
-	OpenSSL_add_all_algorithms(); 
-	// ============== SSL init //
-	
-	BIO* clientbio = preparePort(port);
-	for (;;)
-	{
-		printf( "Waiting for client request.\n" ); //===============================================
-		while (BIO_do_accept(clientbio) <=0 )
-		{
-			printf( "error accepting \n" ); 
-			exit(1); 
-		}
-		printf("Connection with client accepted. Connection Established\n");//=======================
-		
-		/*      Verifying Client      */
-		performRSAChallenge(clientbio);
-		int transaction = verifyTransaction(clientbio);
-		/*   recieve filename and send */
-		
-		if(transaction == 1) //send so recieveFile
- 		{
- 			recieveFile(clientbio);
- 		}
- 		if(transaction == 2) //recieve so sendFile
- 		{
- 			sendFile(clientbio);
- 		}
- 		if(transaction < 0) //error
- 		{
- 			printf("Something went wrong with determining transaction type.");
- 		}
- 		
-		BIO_free(clientbio); 
-		exit(1); // comment out to do more!
-	}
 }
