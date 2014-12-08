@@ -68,7 +68,6 @@ int main( int argc, const char* argv[] )
 	printf("Client application is exiting.\nGood Bye!\n");
 	return 0;
 }
-
 BIO* establishSSLConnection(char * serveraddress, char * port){
 	printf("Attempting to establish SSL Connection.\n");
     //============================
