@@ -110,26 +110,18 @@ BIO* establishSSLConnection(char * serveraddress, char * port){
 	SSL *ssl;
 	
 	SSL_CTX_set_verify(ctx,SSL_VERIFY_NONE,NULL); 
-	// ============== SSL init //
 	
 	// Establish an SSL Connection
-	BIO* bio = BIO_new_ssl_connect(ctx); 
-	if (bio == NULL){
-		printf("Error: SSL bio could not be established.\n"); 
-		SSL_CTX_free(ctx);
-		exit(1); 
-	}
-
-	BIO_get_ssl(bio,&ssl); 
-	SSL_set_mode(ssl,SSL_MODE_AUTO_RETRY); 
-	
     strcat(serveraddress, ":");
     strcat(serveraddress, port);
     char * concatenate = serveraddress;
     char * connection = malloc(sizeof(char) * (sizeof(concatenate) + 1));
 	strcpy(connection, concatenate); 
 
-	bio = BIO_new_connect(connection); 
+	BIO* bio = BIO_new_connect(connection); 
+	
+	BIO_get_ssl(bio,&ssl); 
+	SSL_set_mode(ssl,SSL_MODE_AUTO_RETRY); 
 	if (BIO_do_connect(bio) <= 0){
 		printf("Error: SSL connect failed.\n"); 
 		BIO_free_all(bio);
@@ -137,10 +129,11 @@ BIO* establishSSLConnection(char * serveraddress, char * port){
 		exit(1); 
 	}
 	if (BIO_do_handshake(bio)<=0){
-		printf("SSL handshake failed.\n"); 
+		printf("Error: SSL handshake failed.\n"); 
 		SSL_CTX_free(ctx); 
 		exit(1); 
 	}
+	// ============== SSL init //
 
 	printf("SSL Connection has been established!\n");
 	return bio;

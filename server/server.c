@@ -70,7 +70,7 @@ void acceptConnections(char * port){
 	loop_forever
 	{
 		printf( "Waiting for client request.\n" ); //===============================================
-		while (BIO_do_accept(clientbio) <=0 )
+		if (BIO_do_accept(clientbio) <=0 )
 		{
 			printf( "error accepting \n" ); 
 			exit(1); 
@@ -93,7 +93,7 @@ void acceptConnections(char * port){
  		{
  			printf("Something went wrong with determining transaction type.");
  		}
- 		
+ 		BIO_reset(clientbio);
 		BIO_free(clientbio); 
 		break; // comment out to do more!
 	}
